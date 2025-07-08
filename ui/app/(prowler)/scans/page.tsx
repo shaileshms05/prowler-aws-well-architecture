@@ -32,6 +32,7 @@ export default async function Scans({
   const providersData = await getProviders({
     filters: {
       "filter[connected]": true,
+      "filter[provider_type__in]": "aws",
     },
     pageSize: 50,
   });
@@ -51,8 +52,12 @@ export default async function Scans({
     (provider: ProviderProps) => !provider.attributes.connection.connected,
   );
 
-  // Get scans data to check for executing scans
-  const scansData = await getScansByState();
+  // Get scans data to check for executing scans (AWS only)
+  const scansData = await getScansByState({
+    filters: {
+      "filter[provider_type__in]": "aws"
+    }
+  });
 
   const hasExecutingScan = scansData?.data?.some(
     (scan: ScanProps) =>
@@ -68,14 +73,14 @@ export default async function Scans({
 
   if (thereIsNoProviders) {
     return (
-      <ContentLayout title="Scans" icon="lucide:scan-search">
+      <ContentLayout title="AWS Scans" icon="lucide:scan-search">
         <NoProvidersAdded />
       </ContentLayout>
     );
   }
 
   return (
-    <ContentLayout title="Scans" icon="lucide:scan-search">
+    <ContentLayout title="AWS Scans" icon="lucide:scan-search">
       <AutoRefresh hasExecutingScan={hasExecutingScan} />
       <>
         {thereIsNoProvidersConnected ? (
@@ -93,14 +98,14 @@ export default async function Scans({
         />
         <Spacer y={8} />
         <Suspense key={searchParamsKey} fallback={<SkeletonTableScans />}>
-          <SSRDataTableScans searchParams={searchParams} />
+          <SSRAWSDataTableScans searchParams={searchParams} />
         </Suspense>
       </>
     </ContentLayout>
   );
 }
 
-const SSRDataTableScans = async ({
+const SSRAWSDataTableScans = async ({
   searchParams,
 }: {
   searchParams: SearchParamsProps;
@@ -119,12 +124,18 @@ const SSRDataTableScans = async ({
   // Extract query from filters
   const query = (filters["filter[search]"] as string) || "";
 
+  // Add AWS provider filter
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+
   // Fetch scans data with provider information included
   const scansData = await getScans({
     query,
     page,
     sort,
-    filters,
+    filters: awsFilters,
     pageSize,
     include: "provider",
   });

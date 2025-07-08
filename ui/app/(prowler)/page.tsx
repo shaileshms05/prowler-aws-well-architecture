@@ -32,25 +32,25 @@ export default function Home({
 }) {
   const searchParamsKey = JSON.stringify(searchParams || {});
   return (
-    <ContentLayout title="Overview" icon="solar:pie-chart-2-outline">
+    <ContentLayout title="AWS Well Architecture Overview" icon="solar:pie-chart-2-outline">
       <FilterControls providers />
 
       <div className="grid grid-cols-12 gap-12 lg:gap-6">
         <div className="col-span-12 lg:col-span-4">
           <Suspense fallback={<SkeletonProvidersOverview />}>
-            <SSRProvidersOverview />
+            <SSRAWSProvidersOverview />
           </Suspense>
         </div>
 
         <div className="col-span-12 lg:col-span-4">
           <Suspense fallback={<SkeletonFindingsBySeverityChart />}>
-            <SSRFindingsBySeverity searchParams={searchParams} />
+            <SSRAWSFindingsBySeverity searchParams={searchParams} />
           </Suspense>
         </div>
 
         <div className="col-span-12 lg:col-span-4">
           <Suspense fallback={<SkeletonFindingsByStatusChart />}>
-            <SSRFindingsByStatus searchParams={searchParams} />
+            <SSRAWSFindingsByStatus searchParams={searchParams} />
           </Suspense>
         </div>
 
@@ -60,7 +60,7 @@ export default function Home({
             key={searchParamsKey}
             fallback={<SkeletonTableNewFindings />}
           >
-            <SSRDataNewFindingsTable />
+            <SSRAWSDataNewFindingsTable />
           </Suspense>
         </div>
       </div>
@@ -68,18 +68,26 @@ export default function Home({
   );
 }
 
-const SSRProvidersOverview = async () => {
+const SSRAWSProvidersOverview = async () => {
   const providersOverview = await getProvidersOverview({});
+  
+  // Filter to show only AWS providers
+  const awsProvidersOverview = {
+    ...providersOverview,
+    data: providersOverview.data?.filter((provider: any) => 
+      provider.attributes?.provider?.toLowerCase() === 'aws'
+    ) || []
+  };
 
   return (
     <>
-      <h3 className="mb-4 text-sm font-bold uppercase">Providers Overview</h3>
-      <ProvidersOverview providersOverview={providersOverview} />
+      <h3 className="mb-4 text-sm font-bold uppercase">AWS Providers Overview</h3>
+      <ProvidersOverview providersOverview={awsProvidersOverview} />
     </>
   );
 };
 
-const SSRFindingsByStatus = async ({
+const SSRAWSFindingsByStatus = async ({
   searchParams,
 }: {
   searchParams: SearchParamsProps | undefined | null;
@@ -92,17 +100,23 @@ const SSRFindingsByStatus = async ({
       )
     : {};
 
-  const findingsByStatus = await getFindingsByStatus({ filters });
+  // Add AWS provider filter
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+
+  const findingsByStatus = await getFindingsByStatus({ filters: awsFilters });
 
   return (
     <>
-      <h3 className="mb-4 text-sm font-bold uppercase">Findings by Status</h3>
+      <h3 className="mb-4 text-sm font-bold uppercase">AWS Findings by Status</h3>
       <FindingsByStatusChart findingsByStatus={findingsByStatus} />
     </>
   );
 };
 
-const SSRFindingsBySeverity = async ({
+const SSRAWSFindingsBySeverity = async ({
   searchParams,
 }: {
   searchParams: SearchParamsProps | undefined | null;
@@ -115,17 +129,23 @@ const SSRFindingsBySeverity = async ({
       )
     : {};
 
-  const findingsBySeverity = await getFindingsBySeverity({ filters });
+  // Add AWS provider filter
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+
+  const findingsBySeverity = await getFindingsBySeverity({ filters: awsFilters });
 
   return (
     <>
-      <h3 className="mb-4 text-sm font-bold uppercase">Findings by Severity</h3>
+      <h3 className="mb-4 text-sm font-bold uppercase">AWS Findings by Severity</h3>
       <FindingsBySeverityChart findingsBySeverity={findingsBySeverity} />
     </>
   );
 };
 
-const SSRDataNewFindingsTable = async () => {
+const SSRAWSDataNewFindingsTable = async () => {
   const page = 1;
   const sort = "severity,-inserted_at";
 
@@ -135,6 +155,7 @@ const SSRDataNewFindingsTable = async () => {
     "filter[status__in]": "FAIL",
     "filter[delta__in]": "new",
     "filter[inserted_at__gte]": twoDaysAgo,
+    "filter[provider_type__in]": "aws" // Filter for AWS only
   };
 
   const findingsData = await getFindings({
@@ -175,10 +196,10 @@ const SSRDataNewFindingsTable = async () => {
       <div className="relative flex w-full">
         <div className="flex w-full items-center gap-2">
           <h3 className="text-sm font-bold uppercase">
-            Latest new failing findings
+            Latest AWS Well Architecture failing findings
           </h3>
           <p className="text-xs text-gray-500">
-            Showing the latest 10 new failing findings by severity from the last
+            Showing the latest 10 new failing AWS findings by severity from the last
             2 days.
           </p>
         </div>

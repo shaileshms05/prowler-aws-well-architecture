@@ -21,7 +21,7 @@ export default async function Providers({
   const searchParamsKey = JSON.stringify(searchParams || {});
 
   return (
-    <ContentLayout title="Cloud Providers" icon="fluent:cloud-sync-24-regular">
+    <ContentLayout title="AWS Cloud Providers" icon="fluent:cloud-sync-24-regular">
       <FilterControls search customFilters={filterProviders || []} />
       <Spacer y={8} />
       <div className="flex items-center gap-4 md:justify-end">
@@ -33,7 +33,7 @@ export default async function Providers({
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12">
           <Suspense key={searchParamsKey} fallback={<SkeletonTableProviders />}>
-            <SSRDataTable searchParams={searchParams} />
+            <SSRAWSDataTable searchParams={searchParams} />
           </Suspense>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default async function Providers({
   );
 }
 
-const SSRDataTable = async ({
+const SSRAWSDataTable = async ({
   searchParams,
 }: {
   searchParams: SearchParamsProps;
@@ -58,11 +58,17 @@ const SSRDataTable = async ({
   // Extract query from filters
   const query = (filters["filter[search]"] as string) || "";
 
+  // Add AWS provider filter
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+
   const providersData = await getProviders({
     query,
     page,
     sort,
-    filters,
+    filters: awsFilters,
     pageSize,
   });
 

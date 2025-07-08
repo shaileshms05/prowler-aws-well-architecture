@@ -38,6 +38,12 @@ export default async function Findings({
   const { searchParamsKey, encodedSort } = extractSortAndKey(searchParams);
   const { filters, query } = extractFiltersAndQuery(searchParams);
 
+  // Add AWS provider filter to all queries
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+
   // Check if the searchParams contain any date or scan filter
   const hasDateOrScan = hasDateOrScanFilter(searchParams);
 
@@ -45,10 +51,20 @@ export default async function Findings({
     (hasDateOrScan ? getMetadataInfo : getLatestMetadataInfo)({
       query,
       sort: encodedSort,
-      filters,
+      filters: awsFilters,
     }),
-    getProviders({ pageSize: 50 }),
-    getScans({ pageSize: 50 }),
+    getProviders({ 
+      pageSize: 50,
+      filters: {
+        "filter[provider_type__in]": "aws"
+      }
+    }),
+    getScans({ 
+      pageSize: 50,
+      filters: {
+        "filter[provider_type__in]": "aws"
+      }
+    }),
   ]);
 
   // Extract unique regions and services from the new endpoint
@@ -81,7 +97,7 @@ export default async function Findings({
   ) as { [uid: string]: ScanEntity }[];
 
   return (
-    <ContentLayout title="Findings" icon="carbon:data-view-alt">
+    <ContentLayout title="AWS Well Architecture Findings" icon="carbon:data-view-alt">
       <FindingsFilters
         providerUIDs={providerUIDs}
         providerDetails={providerDetails}
@@ -94,13 +110,13 @@ export default async function Findings({
       />
       <Spacer y={8} />
       <Suspense key={searchParamsKey} fallback={<SkeletonTableFindings />}>
-        <SSRDataTable searchParams={searchParams} />
+        <SSRAWSDataTable searchParams={searchParams} />
       </Suspense>
     </ContentLayout>
   );
 }
 
-const SSRDataTable = async ({
+const SSRAWSDataTable = async ({
   searchParams,
 }: {
   searchParams: SearchParamsProps;
@@ -115,6 +131,13 @@ const SSRDataTable = async ({
   });
 
   const { filters, query } = extractFiltersAndQuery(searchParams);
+  
+  // Add AWS provider filter
+  const awsFilters = {
+    ...filters,
+    "filter[provider_type__in]": "aws"
+  };
+  
   // Check if the searchParams contain any date or scan filter
   const hasDateOrScan = hasDateOrScanFilter(searchParams);
 
@@ -124,7 +147,7 @@ const SSRDataTable = async ({
     query,
     page,
     sort: encodedSort,
-    filters,
+    filters: awsFilters,
     pageSize,
   });
 

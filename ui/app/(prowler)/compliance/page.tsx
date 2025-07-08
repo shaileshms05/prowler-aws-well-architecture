@@ -33,6 +33,7 @@ export default async function Compliance({
   const scansData = await getScans({
     filters: {
       "filter[state]": "completed",
+      "filter[provider_type__in]": "aws", // Filter for AWS scans only
     },
     pageSize: 50,
     fields: {
@@ -101,7 +102,7 @@ export default async function Compliance({
   const uniqueRegions = metadataInfoData?.data?.attributes?.regions || [];
 
   return (
-    <ContentLayout title="Compliance" icon="fluent-mdl2:compliance-audit">
+    <ContentLayout title="AWS Well Architecture Compliance" icon="fluent-mdl2:compliance-audit">
       {selectedScanId ? (
         <>
           <ComplianceHeader
@@ -109,7 +110,7 @@ export default async function Compliance({
             uniqueRegions={uniqueRegions}
           />
           <Suspense key={searchParamsKey} fallback={<ComplianceSkeletonGrid />}>
-            <SSRComplianceGrid
+            <SSRAWSComplianceGrid
               searchParams={searchParams}
               selectedScan={selectedScanData}
             />
@@ -122,7 +123,7 @@ export default async function Compliance({
   );
 }
 
-const SSRComplianceGrid = async ({
+const SSRAWSComplianceGrid = async ({
   searchParams,
   selectedScan,
 }: {
@@ -158,7 +159,7 @@ const SSRComplianceGrid = async ({
     return (
       <div className="flex h-full items-center">
         <div className="text-sm text-default-500">
-          No compliance data available for the selected scan.
+          No AWS Well Architecture compliance data available for the selected scan.
         </div>
       </div>
     );
@@ -168,14 +169,34 @@ const SSRComplianceGrid = async ({
   if (compliancesData?.errors?.length > 0) {
     return (
       <div className="flex h-full items-center">
-        <div className="text-sm text-default-500">Provide a valid scan ID.</div>
+        <div className="text-sm text-default-500">Provide a valid AWS scan ID.</div>
+      </div>
+    );
+  }
+
+  // Filter to show only AWS Well Architecture frameworks
+  const awsCompliances = compliancesData.data.filter((compliance: ComplianceOverviewData) => {
+    const framework = compliance.attributes.framework?.toLowerCase() || '';
+    return framework.includes('aws') || 
+           framework.includes('well') || 
+           framework.includes('architect') ||
+           framework.includes('waa') ||
+           framework.includes('well-architected');
+  });
+
+  if (awsCompliances.length === 0) {
+    return (
+      <div className="flex h-full items-center">
+        <div className="text-sm text-default-500">
+          No AWS Well Architecture compliance frameworks found for the selected scan.
+        </div>
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-      {compliancesData.data.map((compliance: ComplianceOverviewData) => {
+      {awsCompliances.map((compliance: ComplianceOverviewData) => {
         const { attributes, id } = compliance;
         const { framework, version, requirements_passed, total_requirements } =
           attributes;
